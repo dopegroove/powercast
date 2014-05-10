@@ -1,10 +1,9 @@
-powercast
+Powercast (A powershell podcast download manager)
 =========
 
-A Powershell podcast download manager.
-
 I am making this podcast downloader because I found other bigger projects like Miro and gpodder would choke and 
-die on my OPML feed all the time. This script will do the following when it's all completed.
+die on my OPML feed all the time. This script will do the following when it's all completed. 
+This script should be run on Powershell 3 or greater.
 
 - download the latest podcasts from the OPML to point it at (To Do)
 - delete podcasts older then certain date. (To Do)
