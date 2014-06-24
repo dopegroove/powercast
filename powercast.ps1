@@ -1,5 +1,15 @@
+Param(
+  [string]$Mode
+  [string]$mediaPath
+)
+
 # Do I need this function.. probly not...
 function createPath ($path){cmd /c md $path}
+
+Function deleteFeed{
+write-host "Deleting Feeds..."
+}
+
 $maxOldPodcasts = 3
 $maxJobs =3
 $MyOPMLFile= "c:\u\subscriptions.opml" #change this to the name of your OPML file
@@ -8,6 +18,8 @@ $podcastHistory ="$mediaPath\podcastHistory.txt"
 $currentPath = [System.IO.Path]::GetDirectoryName($myInvocation.MyCommand.Definition)
 $debugFlag = 1
 
+Function getFeeds{
+write-host "Getting Feeds..."
 #pull in OPML Feed 
 [xml]$opml= Get-Content $MyOPMLFile
 $podcastList = $opml.opml.body.outline
@@ -78,3 +90,12 @@ foreach ($podcast in $podcasts){
 }
 }Else {"The website for $podcastTitle appears to be down..."}
 } 
+#clean up completed jobs
+Get-Job|where {$_.state -eq "Completed"}|Remove-Job
+}
+
+# run according to mode 
+switch $mode{
+"download" {getFeeds}
+"delete"{deleteFeeds}
+}
