@@ -1,9 +1,9 @@
 Param(
-  [string]$Mode
+  [string]$Mode,
   [string]$mediaPath
 )
 
-# Do I need this function.. probly not...
+# Do I need this function.. probably not...
 function createPath ($path){cmd /c md $path}
 
 Function deleteFeed{
@@ -16,10 +16,10 @@ $MyOPMLFile= "c:\u\subscriptions.opml" #change this to the name of your OPML fil
 $mediaPath = "c:\dump\podcasts"
 $podcastHistory ="$mediaPath\podcastHistory.txt"
 $currentPath = [System.IO.Path]::GetDirectoryName($myInvocation.MyCommand.Definition)
-$debugFlag = 1
+$debugFlag = 0
 
 Function getFeeds{
-write-host "Getting Feeds..."
+write-host "Getting Feeds from $MyOPMLFile" -foregroundcolor yellow
 #pull in OPML Feed 
 [xml]$opml= Get-Content $MyOPMLFile
 $podcastList = $opml.opml.body.outline
@@ -41,7 +41,7 @@ $podcastTitle = $linkDump.rss.channel.title|out-string
 $podcastTitle= $podcastTitle.trim()
 $podcastTitle = $podcastTitle -replace '[^A-Za-z0-9_. !\\-]+', ""
 if ($podcastTitle -ne ""){
-"----Checking the $podcastTitle Feed---" 
+write-host "----Checking the $podcastTitle Feed---" -foregroundcolor Cyan
 #pull in the latest podcasts from the feed
 $podcasts= @{}
 $podcasts = $linkDump.rss.channel.item
@@ -63,39 +63,60 @@ foreach ($podcast in $podcasts){
     #Skip if file was downloaded in the past or if exists in the folder
     $skipFile = 0
     if (test-path $mediaFilePath) {$skipFile = 1}
+	#forcing overwrite; should be removed
+	#$skipFile = 0
     if ($skipFile -eq 0)
     {
-	"Downloading $episodeTitle ($mediaFile)" 
-        start-job -scriptblock {Invoke-WebRequest $using:podcastUrl -Method Get -OutFile $using:mediaFilePath -UserAgent FireFox}
-    } else {"Skipping $mediaFileName. Already Got it..."}
-    } Else {"No Podcast Media found for this post!"
+	write-host "Downloading $episodeTitle ($mediaFileName)" -foregroundcolor green
+    start-job -scriptblock {Invoke-WebRequest $using:podcastUrl -Method Get -OutFile $using:mediaFilePath -UserAgent FireFox}
+    } else {write-host "Skipping $mediaFileName. Already Got it..." -foregroundcolor white}
+    } Else {write-host "No Podcast Media found for this post!" -foregroundcolor red
     if ($debugFlag -gt 1){
     $podcasts = $linkDump.rss.channel.item
     write-output $podcasts|fl
     write-output $podcast.content|fl}
     }
     }
-   #wait if there are a number of podcasts downloading
+write-host "----End of $podcastTitle Feed---" -foregroundcolor Cyan
+
+#wait for a bit if there are a number of podcasts downloading
    $waitFlag = 1 
    do {
   $downloads = get-Job |where {$_.State -eq 'Running'}
   if ($debugFlag -gt 1){Write-output $downloads|ft}
   $inprogess = $downloads|Measure-Object name
   if ($inprogess.count -gt $maxJobs ){
-  "Waiting for some downloads to complete..." 
+  $downloadcount = $inprogess.count
+  write-host "Waiting for some downloads to complete... ($downloadcount)" -foregroundcolor yellow
   $waitFlag = 0
   start-sleep -s 45
   } else {$waitFlag = 1}
   }while ($waitFlag -eq 0)
 }
-}Else {"The website for $podcastTitle appears to be down..."}
+}Else {write-host "The website for $podcastTitle appears to be down..." -foregroundcolor red}
 } 
+
+#Wait for all jobs to complete
+$waitFlag = 1 
+   do {
+  $downloads = get-Job |where {$_.State -eq 'Running'}
+  $inprogess = $downloads|Measure-Object name
+  if ($inprogess.count -gt 0 ){
+  $downloadcount = $inprogess.count
+  write-host "Waiting for some downloads to complete... ($downloadcount)" -foregroundcolor yellow
+  Write-output $downloads|ft
+  $waitFlag = 0
+  start-sleep -s 45
+  } else {$waitFlag = 1}
+  }while ($waitFlag -eq 0)
+
 #clean up completed jobs
 Get-Job|where {$_.state -eq "Completed"}|Remove-Job
 }
 
-# run according to mode 
-switch $mode{
+#run according to mode 
+write-host "Powercast V0 - Mode: $mode" -foregroundcolor Yellow
+switch ($mode){
 "download" {getFeeds}
 "delete"{deleteFeeds}
 }
