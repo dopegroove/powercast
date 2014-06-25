@@ -13,13 +13,14 @@ write-host "Deleting Feeds..."
 $maxOldPodcasts = 3
 $maxJobs =3
 $MyOPMLFile= "c:\u\subscriptions.opml" #change this to the name of your OPML file
-$mediaPath = "c:\dump\podcasts"
+if ($mediaPath -eq "") {$mediaPath = "c:\dump\podcasts"}
 $podcastHistory ="$mediaPath\podcastHistory.txt"
 $currentPath = [System.IO.Path]::GetDirectoryName($myInvocation.MyCommand.Definition)
 $debugFlag = 0
 
 Function getFeeds{
-write-host "Getting Feeds from $MyOPMLFile" -foregroundcolor yellow
+write-host "Getting Feeds from $MyOPMLFile." -foregroundcolor white
+write-host "Files will be downloaded to: $mediaPath." -foregroundcolor white
 #pull in OPML Feed 
 [xml]$opml= Get-Content $MyOPMLFile
 $podcastList = $opml.opml.body.outline
@@ -62,9 +63,24 @@ foreach ($podcast in $podcasts){
     if (!(test-path $dlpath)){createPath $dlpath}
     #Skip if file was downloaded in the past or if exists in the folder
     $skipFile = 0
-    if (test-path $mediaFilePath) {$skipFile = 1}
-	#forcing overwrite; should be removed
-	#$skipFile = 0
+	
+	#check history file to see if the file was downloaded before 
+	if (test-path $podcastHistory){
+	$oldPodcasts = import-csv $podcastHistory -delimiter ";" -Header podcast,media
+	$arraydump = $oldPodcasts|select podcast,media|?{$_.media -eq "$mediaFileName"}|?{$_.podcast -eq "$podcastTitle"}
+	if ($arraydump) {write-host "File found in history file" -foregroundcolor white
+	$skipFile = 1}
+	}
+	
+	#Skip the file if it is in the folder
+    if ($skipFile -eq 0){	
+    if (test-path $mediaFilePath) {
+	#update podcast history file
+	$strdump = "$podcastTitle;$mediaFileName"
+	$strdump|out-file $podcastHistory -append -NoClobber
+	$skipFile = 1}
+	}
+	
     if ($skipFile -eq 0)
     {
 	write-host "Downloading $episodeTitle ($mediaFileName)" -foregroundcolor green

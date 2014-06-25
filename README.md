@@ -12,7 +12,6 @@ This script should be run on Powershell 3 or greater.
 - Add and Remove Links from your OPML. (To Do)
 - notify of new podcasts that have been downloaded via Prowl. (Maybe)
 
-if you have any other ideas or want to contribute, Please let me know. 
-
+If you have any other ideas or want to contribute, Please let me know. 
 dopegroove@gmail.com
  
