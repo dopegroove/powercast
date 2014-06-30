@@ -1,22 +1,23 @@
 Param(
   [string]$Mode,
-  [string]$mediaPath
+  [string]$mediaPath,
+  [string]$MyOPMLFile
 )
 
 # Do I need this function.. probably not...
 function createPath ($path){cmd /c md $path}
 
-Function deleteFeed{
-write-host "Deleting Feeds..."
+Function displayHelp {
+write-host "PowerCast Command Line Format" -foregroundcolor white
+write-host "powercast 'mode'  'path where podcasts are downloaded' 'location of the OPML file'"
 }
 
-$maxOldPodcasts = 3
-$maxJobs =3
-$MyOPMLFile= "c:\u\subscriptions.opml" #change this to the name of your OPML file
-if ($mediaPath -eq "") {$mediaPath = "c:\dump\podcasts"}
-$podcastHistory ="$mediaPath\podcastHistory.txt"
-$currentPath = [System.IO.Path]::GetDirectoryName($myInvocation.MyCommand.Definition)
-$debugFlag = 0
+
+Function manageFeeds{
+[xml]$opml= Get-Content $MyOPMLFile
+$podcastList = $opml.opml.body.outline
+
+}
 
 Function getFeeds{
 write-host "Getting Feeds from $MyOPMLFile." -foregroundcolor white
@@ -130,9 +131,18 @@ $waitFlag = 1
 Get-Job|where {$_.state -eq "Completed"}|Remove-Job
 }
 
+
+$maxOldPodcasts = 3
+$maxJobs =3
+if ($MyOPMLFile -eq "") {$MyOPMLFile= "c:\u\subscriptions.opml"}
+if ($mediaPath -eq "") {$mediaPath = "c:\dump\podcasts"}
+$podcastHistory ="$mediaPath\podcastHistory.txt"
+$currentPath = [System.IO.Path]::GetDirectoryName($myInvocation.MyCommand.Definition)
+$debugFlag = 0
 #run according to mode 
 write-host "Powercast V0 - Mode: $mode" -foregroundcolor Yellow
 switch ($mode){
+"help" {displayHelp}
 "download" {getFeeds}
-"delete"{deleteFeeds}
+"manage"{manageFeeds}
 }
